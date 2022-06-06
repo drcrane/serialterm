@@ -14,7 +14,6 @@
  * https://e42.uk/
  */
 
-
 #include "StdAfx.h"
 
 // global vars - to avoid parameter passing over thread
@@ -114,6 +113,8 @@ DWORD CALLBACK ConInThread(HANDLE h) {
 	OVERLAPPED ov;
 	HANDLE hconn = GetStdHandle(STD_INPUT_HANDLE);
 	BOOL quit = FALSE;
+	char kb;
+	INPUT_RECORD b1;
 
 	ZeroMemory(&ov,sizeof(ov));
 	ov.hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
@@ -122,9 +123,6 @@ DWORD CALLBACK ConInThread(HANDLE h) {
 		SetCommMask(h,0);
 		return 0;
 	}
-
-	char kb;
-	INPUT_RECORD b1;
 
 	SetConsoleMode(hconn,0);
 	printf("press Esc or Ctrl+C to terminate\n");
@@ -139,7 +137,7 @@ DWORD CALLBACK ConInThread(HANDLE h) {
 		WaitForSingleObject(hconn,INFINITE);
 
 		// read the console buffer
-		if(!ReadConsoleInput(hconn,&b1,1,&read)) {
+		if (!ReadConsoleInput(hconn,&b1,1,&read)) {
 			PrintError("E002_ReadConsoleInput failed...");
 			quit = TRUE;
 		}
@@ -208,21 +206,24 @@ DWORD CALLBACK ConInThread(HANDLE h) {
 
 
 void Terminal(HANDLE h) {
-	HANDLE hconn = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD mask;
 	DWORD id, i;
 	OVERLAPPED ov;
+	FILE * stream = NULL;
 	HRESULT hRes = 0x80000000;
 	DWORD keepGoing = (DWORD)TRUE;
+	HANDLE hconin = INVALID_HANDLE_VALUE;
+	HANDLE hconn = INVALID_HANDLE_VALUE;
+	
+	hconn = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	cls(hconn);
 
-	FILE *stream = NULL;
 	if (logtofile) {
 		stream = fopen(logname, "w");
 	}
 
-	HANDLE hconin = CreateThread(NULL, 0, ConInThread, h, 0, &id);
+	hconin = CreateThread(NULL, 0, ConInThread, h, 0, &id);
 	if (hconin == INVALID_HANDLE_VALUE) {
 	   PrintError("E005_CreateThread failed");
 	   return;
@@ -387,7 +388,7 @@ int main(int argc, char ** argv) {
 
 	if (argc > 1) {
 		// open port for overlapped I/O
-		HANDLE h = CreateFile(argv[1], GENERIC_READ | GENERIC_WRITE, 0, NULL,
+		HANDLE h = CreateFileA((LPCSTR)argv[1], GENERIC_READ | GENERIC_WRITE, 0, NULL,
 			OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
 
 		if (h == INVALID_HANDLE_VALUE) {

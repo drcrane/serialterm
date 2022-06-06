@@ -4,3 +4,10 @@
 !*.*
 !Makefile
 *.exe
+*.vcxproj.user
+*.sdf
+*.opensdf
+ipch/
+Debug/
+Release/
+*.suo
